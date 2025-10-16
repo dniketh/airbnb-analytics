@@ -1,0 +1,115 @@
+version: 2
+
+models:
+  # ────────────────────────────────
+  # 1️⃣ Airbnb Clean
+  # ────────────────────────────────
+  - name: silver_airbnb_clean
+    columns:
+      - name: listing_id
+        tests: [not_null]
+      - name: host_id
+        tests: [not_null]
+
+  # ────────────────────────────────
+  # 2️⃣ LGA Code Clean
+  # ────────────────────────────────
+  - name: silver_lga_code_clean
+    columns:
+      - name: lga_code
+        tests: [not_null, unique]
+      - name: lga_name
+        tests: [not_null, unique]
+
+  # ────────────────────────────────
+  # 3️⃣ LGA–Suburb Clean Mapping
+  # ────────────────────────────────
+  - name: silver_lga_suburb_clean
+    columns:
+      - name: suburb_name
+        tests: [not_null]
+      - name: lga_name
+        tests: [not_null]
+      - name: lga_code
+        tests:
+          - relationships:
+              to: ref('silver_lga_code_clean')
+              field: lga_code
+
+  # ────────────────────────────────
+  # 4️⃣ Census G01 Clean (Population)
+  # ────────────────────────────────
+  - name: silver_census_g01_clean
+    columns:
+      - name: lga_code
+        tests: [not_null, unique]
+      - name: population_total
+        tests: [not_null]
+
+  # ────────────────────────────────
+  # 5️⃣ Census G02 Clean (Socioeconomic)
+  # ────────────────────────────────
+  - name: silver_census_g02_clean
+    columns:
+      - name: lga_code
+        tests: [not_null, unique]
+      - name: median_age_persons
+        tests: [not_null]
+
+  # ────────────────────────────────
+  # 6️⃣ Host (Clean Entity)
+  # ────────────────────────────────
+  - name: silver_host
+    columns:
+      - name: host_id
+        tests: [not_null, unique]
+      - name: host_name
+        tests: [not_null]
+      - name: host_neighbourhood
+        tests: [not_null]
+
+  # ────────────────────────────────
+  # 7️⃣ Listing (Monthly Clean Entity)
+  # ────────────────────────────────
+  - name: silver_listing
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, month]
+    columns:
+      - name: listing_id
+        tests: [not_null]
+      - name: month
+        tests: [not_null]
+      - name: host_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('silver_host')
+              field: host_id
+
+  # ────────────────────────────────
+  # 8️⃣ Listing with LGA (Conformed Geography)
+  # ────────────────────────────────
+  - name: silver_listing_with_lga
+    columns:
+      - name: listing_id
+        tests: [not_null]
+      - name: lga_code
+        tests:
+          - relationships:
+              to: ref('silver_lga')
+              field: lga_code
+
+  # ────────────────────────────────
+  # 9️⃣ LGA (Cleaned + Joined G01/G02)
+  # ────────────────────────────────
+  - name: silver_lga
+    columns:
+      - name: lga_code
+        tests: [not_null, unique]
+      - name: lga_name
+        tests: [not_null]
+      - name: population_total
+        tests: [not_null]
+      - name: median_age_persons
+        tests: [not_null]
