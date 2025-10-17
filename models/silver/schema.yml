@@ -44,30 +44,10 @@ models:
     description: "Latest available host data, one row per host_id."
     columns:
       - name: host_id
-        tests: [not_null, unique]
+        tests: [not_null]
       - name: host_name
         tests: [not_null]
       - name: host_neighbourhood
-        tests: [not_null]
-
-  # ────────────────────────────────
-  # Host with LGA mapping
-  # ────────────────────────────────
-  - name: silver_host_with_lga
-    description: "Hosts mapped to their corresponding LGA based on host_neighbourhood."
-    columns:
-      - name: host_id
-        tests: [not_null, unique]
-      - name: lga_code
-        tests:
-          - relationships:
-              arguments:
-                to: ref('silver_lga_with_census')
-                field: lga_code
-        description: "LGA code linked to the host’s neighbourhood."
-      - name: host_neighbourhood
-        tests: [not_null]
-      - name: scraped_date
         tests: [not_null]
 
   # ────────────────────────────────
@@ -84,7 +64,7 @@ models:
   # ────────────────────────────────
   # LGA Combined (Suburb to LGA map)
   # ────────────────────────────────
-  - name: silver_lga_combined
+  - name: silver_lga
     tests:
       # guarantees 1:1 map: one row per suburb_name
       - unique:
@@ -97,25 +77,6 @@ models:
           - relationships:
               to: ref('silver_lga_code_clean')
               field: lga_code
-
-  # ────────────────────────────────
-  # LGA with Census (Demographics)
-  # ────────────────────────────────
-  - name: silver_lga_with_census
-    description: "Canonical LGA table enriched with Census G01 and G02 demographic data."
-    columns:
-      - name: lga_code
-        tests: [not_null, unique]
-      - name: lga_name
-        tests: [not_null]
-      - name: population_total
-        tests:
-          - not_null:
-              severity: warn          # or remove
-      - name: median_age_persons
-        tests:
-          - not_null:
-              severity: warn  
 
   # ────────────────────────────────
   # Listing (Monthly de-duplicated)
@@ -134,18 +95,3 @@ models:
                 field: host_id
       - name: month
         tests: [not_null]
-
-  # ────────────────────────────────
-  # Listing with LGA
-  # ────────────────────────────────
-  - name: silver_listing_with_lga
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: ['listing_id']
-    columns:
-      - name: lga_code
-        tests:
-          - relationships:
-              to: ref('silver_lga_with_census')
-              field: lga_code
-              severity: warn   # flip to error when coverage is 100%

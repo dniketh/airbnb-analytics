@@ -8,11 +8,11 @@ select
   -- keys / ids
   listing_id,
   host_id,
-
-  -- attributes
+  -- proprty attributes
   property_type,
   room_type,
   accommodates,
+  -- suburb 
   listing_neighbourhood,
 
   -- metrics (raw per-scrape)
@@ -28,7 +28,7 @@ select
   review_scores_value::numeric(5,2)         as review_scores_value,
 
   -- time columns
-  scraped_date::timestamp                        as scraped_date,      -- original date (day precision)
+  scraped_date::timestamp                        as scraped_date,      -- original date 
   date_trunc('month', scraped_date)::date   as month              -- convenience for rollups
 from src
 where listing_id is not null

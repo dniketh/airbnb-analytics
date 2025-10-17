@@ -1,7 +1,7 @@
 {% snapshot host_snapshot %}
 {{
   config(
-    target_schema = 'silver_snapshots',
+    target_schema = 'silver',
     unique_key    = 'host_id',
     strategy      = 'timestamp',
     updated_at    = 'scraped_date'

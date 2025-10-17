@@ -14,15 +14,27 @@ clean-targets: ["target", "dbt_packages"]
 
 models:
   bde_at3_dbt:
+    # (optional) project-wide default
+    +materialized: table
+
     bronze:
       +schema: bronze
+      +materialized: table
+
     silver:
       +schema: silver
+      +materialized: table
+
     gold:
       +schema: gold
+      star:
+        +materialized: table
+      mart:
+        +materialized: view
 
 snapshots:
   bde_at3_dbt:
-    +target_schema: silver_snapshots
+    +target_schema: silver
+
 flags:
   require_generic_test_arguments_property: true

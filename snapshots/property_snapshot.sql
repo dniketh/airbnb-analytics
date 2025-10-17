@@ -1,7 +1,7 @@
-{% snapshot listing_core_snapshot %}
+{% snapshot property_snapshot %}
 {{
   config(
-    target_schema = 'silver_snapshots',
+    target_schema = 'silver',
     unique_key    = 'listing_id',
     strategy      = 'timestamp',
     updated_at    = 'scraped_date'
@@ -13,6 +13,7 @@ select
   property_type,
   room_type,
   accommodates,
-  scraped_date
+  scraped_date,
+  listing_neighbourhood
 from {{ ref('silver_listing') }}
 {% endsnapshot %}
