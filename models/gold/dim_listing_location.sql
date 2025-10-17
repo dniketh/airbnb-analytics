@@ -2,7 +2,7 @@
 
 select
   listing_id,
-  suburb,
+  suburb_name,
   lga_code,
   lga_name,
   dbt_valid_from as record_start_date,
