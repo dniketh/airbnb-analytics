@@ -10,7 +10,7 @@ dedup as (
     host_is_superhost,
     coalesce(nullif(trim(host_neighbourhood), ''), 'unknown') as host_neighbourhood,
     host_since_raw as host_since,
-    scraped_date
+    scraped_date::timestamp as scraped_date
   from base
   where host_id is not null
   order by host_id, scraped_date desc

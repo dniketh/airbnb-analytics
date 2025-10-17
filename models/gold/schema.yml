@@ -1,0 +1,101 @@
+version: 2
+
+models:
+
+  # ────────────────────────────────
+  # 1️⃣ Host Dimension (SCD2)
+  # ────────────────────────────────
+  - name: dim_host
+    description: "Host dimension (SCD2) built from host_snapshot; tracks name, superhost status, and neighbourhood changes over time."
+    columns:
+      - name: host_id
+        description: "Natural key for the host."
+        tests: [not_null]
+      - name: record_start_date
+        description: "Timestamp when this host record version became active."
+        tests: [not_null]
+      - name: record_end_date
+        description: "Timestamp when this host record version expired (NULL = current)."
+      - name: is_current
+        description: "Boolean flag showing if this version is current."
+
+  # ────────────────────────────────
+  # 2️⃣ Listing Core Dimension (SCD2)
+  # ────────────────────────────────
+  - name: dim_listing
+    description: "Listing dimension (SCD2) from listing_core_snapshot; captures structural attributes like property type, room type, and capacity."
+    columns:
+      - name: listing_id
+        description: "Natural key for the listing."
+        tests: [not_null]
+      - name: host_id
+        description: "Foreign key to the host dimension."
+        tests:
+          - relationships:
+              to: ref('dim_host')
+              field: host_id
+      - name: record_start_date
+        description: "Start date of this version of the listing record."
+        tests: [not_null]
+      - name: record_end_date
+        description: "End date of this version (NULL = current)."
+      - name: is_current
+        description: "Boolean flag showing if this listing record is the current version."
+
+  # ────────────────────────────────
+  # 3️⃣ Listing Location Dimension (SCD2)
+  # ────────────────────────────────
+  - name: dim_listing_location
+    description: "Listing location dimension (SCD2) built from listing_location_snapshot; maps each listing to suburb and LGA over time."
+    columns:
+      - name: listing_id
+        description: "Natural key for the listing."
+        tests: [not_null]
+      - name: suburb
+        description: "Suburb name associated with the listing."
+      - name: lga_code
+        description: "LGA code derived from suburb mapping."
+        tests:
+          - relationships:
+              to: ref('dim_lga_with_census')
+              field: lga_code
+      - name: lga_name
+        description: "LGA name corresponding to the suburb."
+      - name: record_start_date
+        description: "Timestamp when this location record became active."
+        tests: [not_null]
+      - name: record_end_date
+        description: "Timestamp when this location record expired (NULL = current)."
+      - name: is_current
+        description: "Boolean flag showing if this location record is the current version."
+
+  # ────────────────────────────────
+  # 4️⃣ LGA + Census Dimension (Static)
+  # ────────────────────────────────
+  - name: dim_lga_with_census
+    description: "Static reference dimension combining LGA codes, names, and Census G01/G02 demographic attributes."
+    columns:
+      - name: lga_code
+        description: "Primary key for the LGA."
+        tests: [not_null, unique]
+      - name: lga_name
+        description: "Name of the Local Government Area."
+        tests: [not_null]
+      - name: median_age_persons
+        description: "Median age of residents in the LGA."
+      - name: average_household_size
+        description: "Average household size."
+      - name: population_total
+        description: "Total population of the LGA."
+  - name: dim_host_location.sql
+    description: "Host → location (suburb/LGA) SCD2 dimension from host_location_snapshot."
+    columns:
+      - name: host_id
+        tests: [not_null]
+      - name: lga_code
+        tests:
+          - relationships:
+              to: ref('dim_lga_with_census')
+              field: lga_code
+      - name: record_start_date
+        tests: [not_null]

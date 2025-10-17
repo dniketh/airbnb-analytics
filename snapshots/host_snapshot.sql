@@ -12,7 +12,7 @@ select
   host_name,
   host_is_superhost,
   host_neighbourhood,
-  host_since_raw,
+  host_since,
   scraped_date
 from {{ ref('silver_host') }}
 {% endsnapshot %}

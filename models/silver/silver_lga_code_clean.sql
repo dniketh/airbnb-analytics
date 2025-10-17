@@ -6,10 +6,10 @@ with src as (
     lga_name
   from {{ source('bronze','lga_code') }}
 ),
-
-clean as (
+--just for verification purposes - not really a need 
+clean as ( 
   select
-    nullif(trim(lower(lga_code)), '') as lga_code,   -- keep as TEXT identifier
+    nullif(trim(lower(lga_code)), '') as lga_code,   
     nullif(trim(lower(lga_name)), '') as lga_name
   from src
   where nullif(trim(lga_code), '') is not null

@@ -40,5 +40,5 @@ select
   g01.age_45_64_p,
   g01.age_65_plus_p
 from lga_codes c
-join g02 on g02.lga_code = c.lga_code
-join g01 on g01.lga_code = c.lga_code
+left join g02 on g02.lga_code = c.lga_code
+left join g01 on g01.lga_code = c.lga_code

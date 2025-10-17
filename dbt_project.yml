@@ -1,8 +1,8 @@
-name: 'bde_at3_dbt'         
+name: 'bde_at3_dbt'
 version: '1.0.0'
 config-version: 2
 
-profile: 'default'           
+profile: 'default'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -10,12 +10,10 @@ test-paths: ["tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
-
-target-path: "target"
-clean-targets: ["target","dbt_packages"]
+clean-targets: ["target", "dbt_packages"]
 
 models:
-  bde_at3_dbt:               
+  bde_at3_dbt:
     bronze:
       +schema: bronze
     silver:
@@ -24,5 +22,7 @@ models:
       +schema: gold
 
 snapshots:
-  bde_at3_dbt:               
+  bde_at3_dbt:
     +target_schema: silver_snapshots
+flags:
+  require_generic_test_arguments_property: true
