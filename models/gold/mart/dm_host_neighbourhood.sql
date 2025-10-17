@@ -1,4 +1,3 @@
--- models/gold/dm_host_neighbourhood.sql
 {{ config(materialized='view') }}
 
 with base as (

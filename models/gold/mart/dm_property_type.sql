@@ -1,4 +1,3 @@
--- models/gold/dm_property_type.sql
 {{ config(materialized='view') }}
 
 with base as (
