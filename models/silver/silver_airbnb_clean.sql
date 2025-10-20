@@ -17,49 +17,50 @@ with src as (
 
 clean as (
   select
-    cast(listing_id as bigint)                        as listing_id,
-    cast(host_id as bigint)                           as host_id,
-    cast(scrape_id as bigint)                         as scrape_id,
-    cast(scraped_date as date)                        as scraped_date,
+    -- ids & dates
+    nullif(trim(listing_id), '')::bigint           as listing_id,
+    nullif(trim(host_id), '')::bigint              as host_id,
+    nullif(trim(scrape_id), '')::bigint           as scrape_id,
+    cast(scraped_date as date)                     as scraped_date,
 
-    nullif(trim(host_name), '')                       as host_name,
+    -- host attrs
+    nullif(trim(host_name), '')                    as host_name,
     case lower(host_is_superhost)
       when 't' then true when 'f' then false else null end
-                                                      as host_is_superhost,
+                                                   as host_is_superhost,
     coalesce(nullif(trim(lower(host_neighbourhood)), ''), 'unknown') as host_neighbourhood,
-    nullif(trim(host_since), '')                      as host_since,
+    nullif(trim(host_since), '')                   as host_since,
 
+    -- listing attrs
     coalesce(nullif(trim(lower(listing_neighbourhood)), ''), 'unknown') as listing_neighbourhood,
     coalesce(nullif(trim(lower(property_type)), ''), 'unknown')         as property_type,
     coalesce(nullif(trim(lower(room_type)), ''), 'unknown')             as room_type,
-    cast(accommodates as int)                                          as accommodates,
+    nullif(trim(accommodates), '')::int           as accommodates,
 
-    cast(price as numeric(12,2))                      as price,
+    -- metrics
+    nullif(trim(price), '')::numeric(12,2)        as price,
     case lower(has_availability)
       when 't' then true when 'f' then false else null end
-                                                      as has_availability,
-    cast(availability_30 as int)                      as availability_30,
-    cast(number_of_reviews as int)                    as number_of_reviews,
-    cast(review_scores_rating as numeric(5,2))        as review_scores_rating,
-    cast(review_scores_accuracy as numeric(5,2))      as review_scores_accuracy,
-    cast(review_scores_cleanliness as numeric(5,2))   as review_scores_cleanliness,
-    cast(review_scores_checkin as numeric(5,2))       as review_scores_checkin,
-    cast(review_scores_communication as numeric(5,2)) as review_scores_communication,
-    cast(review_scores_value as numeric(5,2))         as review_scores_value,
+                                                   as has_availability,
+    nullif(trim(availability_30), '')::int        as availability_30,
+    nullif(trim(number_of_reviews), '')::int      as number_of_reviews,
+    nullif(trim(review_scores_rating), '')::numeric(5,2)        as review_scores_rating,
+    nullif(trim(review_scores_accuracy), '')::numeric(5,2)      as review_scores_accuracy,
+    nullif(trim(review_scores_cleanliness), '')::numeric(5,2)   as review_scores_cleanliness,
+    nullif(trim(review_scores_checkin), '')::numeric(5,2)       as review_scores_checkin,
+    nullif(trim(review_scores_communication), '')::numeric(5,2) as review_scores_communication,
+    nullif(trim(review_scores_value), '')::numeric(5,2)         as review_scores_value,
 
-    -- pass through provenance
+    -- provenance
     source_file,
     source_month
   from src
-  where listing_id is not null or host_id is not null
+  -- require at least one id to be present (and not just empty text)
+  where nullif(trim(listing_id), '') is not null
+     or nullif(trim(host_id), '')    is not null
 )
 
 select *
 from clean
 where
-  -- keep rows whose scraped_date falls into the month implied by the file name
-  date_trunc('month', scraped_date)::date = source_month
-
-  -- (optional) keep legacy rows that don’t have provenance populated (if any)
-  or source_month is null
-;
+    date_trunc('month', scraped_date)::date = source_month

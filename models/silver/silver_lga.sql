@@ -33,4 +33,4 @@ select distinct
   lga_code,
   lga_name
 from joined
-order by suburb_name, lga_name;
+order by suburb_name, lga_name
