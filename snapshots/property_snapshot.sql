@@ -13,7 +13,6 @@ select
   property_type,
   room_type,
   accommodates,
-  scraped_date,
-  listing_neighbourhood
+  scraped_date
 from {{ ref('silver_listing') }}
 {% endsnapshot %}

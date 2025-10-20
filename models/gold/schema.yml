@@ -1,33 +1,44 @@
 version: 2
 
 models:
-
   - name: dim_host
-    description: "Host dimension (SCD2) built from host_snapshot."
+    description: "Host Dimension SCD Type 2 built from host_snapshot"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - host_id
+            - record_start_date     # or dbt_valid_from if you use dbt snapshot columns
     columns:
       - name: host_id
-        description: "Primary key for dim_host."
-        tests: [not_null, unique]
+        tests:
+          - not_null
       - name: record_start_date
-        description: "Start date for this version."
-        tests: [not_null]
+        tests:
+          - not_null
       - name: record_end_date
       - name: is_current
 
   - name: dim_property
     description: "Property dimension (SCD2) built from property_snapshot."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - listing_id
+            - record_start_date
     columns:
-      - name: property_id
-        description: "Primary key for dim_property (aliased from listing_id)."
-        tests: [not_null, unique]
+      - name: listing_id
+        description: "Key for listings."
+        tests:
+          - not_null
       - name: property_type
       - name: room_type
       - name: accommodates
       - name: record_start_date
-        tests: [not_null]
+        tests:
+          - not_null
       - name: record_end_date
       - name: is_current
-
+      
   - name: dim_suburb
     description: "Static suburb dimension from listing_neighbourhood."
     columns:
@@ -37,33 +48,33 @@ models:
       - name: suburb_name
         tests: [not_null]
 
+ 
   - name: fact_listings
-    description: "Fact table with metrics; grain = (property_id, scraped_date)."
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: ['listing_id','scraped_date']
+    description: "Monthly listing fact table"
     columns:
       - name: listing_id
-        description: "FK → dim_property."
+        description: "Foreign key to dim_listing"
         tests:
           - not_null
           - relationships:
-              to: ref('dim_property')
-              field: listing_id
+              arguments:
+                to: ref('dim_property')
+                field: listing_id
+
       - name: host_id
-        description: "FK → dim_host."
+        description: "Foreign key to dim_host"
         tests:
           - not_null
           - relationships:
-              to: ref('dim_host')
-              field: host_id
-      - name: suburb_id
-        description: "FK → dim_suburb."
+              arguments:
+                to: ref('dim_host')
+                field: host_id
+
+      - name: month_start
+        description: "Month start date for this fact row"
         tests:
           - not_null
-          - relationships:
-              to: ref('dim_suburb')
-              field: suburb_id
-      - name: scraped_date
-        description: "Grain component (with property_id)."
-        tests: [not_null]
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: ['listing_id', 'recorded_date']

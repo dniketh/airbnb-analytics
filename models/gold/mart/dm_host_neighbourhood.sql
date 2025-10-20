@@ -1,69 +1,126 @@
 {{ config(materialized='view') }}
 
+-- 1) Base fact
 with base as (
-  -- Start from fact for pricing/availability/revenue-by-listing
   select
     f.listing_id,
     f.host_id,
+    f.date_id,
     f.price,
     f.has_availability,
-    f.availability_30,
-    f.recorded_date,
-    f.month_start,
-    case when f.has_availability
-         then greatest(0, 30 - f.availability_30) * f.price
-         else 0
-    end::numeric(14,2) as est_revenue_active
+    f.availability_30
   from {{ ref('fact_listings') }} f
 ),
--- Time-valid host join to fetch host_neighbourhood at that date
-host_scd as (
+
+-- 2) Date attrs
+with_date as (
   select
     b.*,
-    lower(trim(h.host_neighbourhood))::text as host_neighbourhood
+    d.scraped_date::date as scraped_date,
+    d.month_start::date  as month_start
   from base b
+  left join {{ ref('dim_date') }} d
+    on b.date_id = d.date_id
+),
+
+-- 3) Host SCD2 join
+host_joined as (
+  select
+    wd.*,
+    h.host_neighbourhood,
+    -- normalize once for joins/overrides
+    lower(trim(h.host_neighbourhood)) as host_neigh_norm,
+    coalesce(h.host_is_superhost, false) as host_is_superhost
+  from with_date wd
   left join {{ ref('dim_host') }} h
-    on  h.host_id = b.host_id
-    and b.recorded_date >= h.record_start_date
-    and b.recorded_date <  coalesce(h.record_end_date, '9999-12-31'::timestamp)
+    on  h.host_id = wd.host_id
+    and wd.scraped_date::timestamp >= h.record_start_date
+    and wd.scraped_date::timestamp <  coalesce(h.record_end_date, timestamp '9999-12-31')
 ),
--- Map host_neighbourhood -> LGA (first via suburb map, then fallback via LGA name)
-lga_mapped as (
-  select
-    hs.*,
-    -- prefer suburb match from silver_lga; fallback to 1-row-per-LGA table
-    coalesce(sl.lga_code::text, lc.lga_code::text) as host_neighbourhood_lga_code
-  from host_scd hs
-  left join {{ ref('silver_lga') }} sl
-    on sl.suburb_name = hs.host_neighbourhood             -- suburb-level map
-  left join {{ ref('silver_lga_code_clean') }} lc
-    on lower(trim(lc.lga_name)) = hs.host_neighbourhood   -- LGA-name fallback
+
+-- 4) Explicit buckets for known non-LGA strings
+overrides as (
+  select 'unknown'  as key_norm, null::text as lga_code, 'Unknown'  as lga_name
+  union all
+  select 'overseas', null::text,            'Overseas'
 ),
-with_lga_name as (
+
+-- 5) Map host_neighbourhood -> main LGA (suburb route first, then LGA name, else override)
+mapped_lga as (
   select
-    lm.*,
-    dl.lga_name as host_neighbourhood_lga
-  from lga_mapped lm
-  left join {{ ref('dim_lga') }} dl
-    on dl.lga_code = lm.host_neighbourhood_lga_code
+    hj.*,
+    -- suburb route
+    r_sub.lga_code as code_by_suburb,
+    r_sub.lga_name as name_by_suburb,
+    -- fallback by LGA name
+    r_name.lga_code as code_by_name,
+    r_name.lga_name as name_by_name,
+    -- override labels (Unknown/Overseas)
+    o.lga_code      as code_by_override,
+    o.lga_name      as name_by_override,
+
+    -- final main LGA
+    coalesce(r_sub.lga_code, r_name.lga_code, o.lga_code)::text as host_neighbourhood_lga_code,
+    coalesce(r_sub.lga_name, r_name.lga_name, o.lga_name)       as host_neighbourhood_lga
+  from host_joined hj
+  left join {{ ref('ref_lga') }} r_sub
+    on hj.host_neigh_norm = lower(trim(r_sub.lga_suburb))
+  left join {{ ref('ref_lga') }} r_name
+    on r_sub.lga_code is null
+   and hj.host_neigh_norm = lower(trim(r_name.lga_name))
+  left join overrides o
+    on hj.host_neigh_norm = o.key_norm
+),
+
+-- 6) Per-row derivations (no filtering; Unknown/Overseas included)
+derived as (
+  select
+    host_neighbourhood_lga,
+    host_neighbourhood_lga_code,
+    month_start,
+    listing_id,
+    host_id,
+    has_availability::boolean                 as has_availability,
+    availability_30::int                      as availability_30,
+    price::numeric(14,2)                      as price,
+    case when has_availability
+         then greatest(0, 30 - availability_30) * price
+         else 0 end::numeric(14,2)           as est_revenue_active
+  from mapped_lga
+),
+
+-- 7) One row per (listing, month, LGA-bucket)
+per_listing_month as (
+  select
+    host_neighbourhood_lga,
+    host_neighbourhood_lga_code,
+    month_start,
+    listing_id,
+    host_id,
+    bool_or(has_availability)                              as was_active_in_month,
+    sum(est_revenue_active)::numeric(14,2)                 as est_revenue_active_sum
+  from derived
+  group by host_neighbourhood_lga, host_neighbourhood_lga_code, month_start, listing_id, host_id
 )
 
+-- 8) Final metrics (Unknown/Overseas appear as their own groups)
 select
   month_start,
-  host_neighbourhood_lga,          -- display name (from dim_lga)
-  host_neighbourhood_lga_code,     -- stable key
+  host_neighbourhood_lga,
+  host_neighbourhood_lga_code,
 
-  -- Number of distinct hosts (per brief)
-  count(distinct host_id)                                             as distinct_hosts,
+  count(distinct host_id) as distinct_hosts,
 
-  -- Average Estimated revenue per active listings (per brief)
-  round(avg(est_revenue_active) filter (where has_availability), 2)   as avg_est_revenue_per_active_listing,
+  -- per active listing
+  round((
+    (sum(est_revenue_active_sum) / nullif(count(distinct listing_id) filter (where was_active_in_month), 0))::numeric
+  ), 2)::numeric(14,2)  as est_revenue_per_active_listing,
 
-  -- Estimated revenue per host = total_est_revenue_active / distinct_hosts (per brief)
-  round(
-    sum(est_revenue_active) / nullif(count(distinct host_id), 0), 2
-  )                                                                   as est_revenue_per_host
+  -- per host
+  round((
+    (sum(est_revenue_active_sum) / nullif(count(distinct host_id), 0))::numeric
+  ), 2)::numeric(14,2)  as est_revenue_per_host
 
-from with_lga_name
-group by 1,2,3
+from per_listing_month
+group by month_start, host_neighbourhood_lga, host_neighbourhood_lga_code
 order by host_neighbourhood_lga, month_start
