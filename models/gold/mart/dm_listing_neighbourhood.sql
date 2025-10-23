@@ -124,7 +124,7 @@ select
     )::numeric
   ), 2)::numeric(14,2)                                                            as avg_est_revenue_per_active_listing,
 
-  -- MoM helpers (based on active/inactive listing counts)
+  -- MoM  (based on active/inactive listing counts)
   lag(count(distinct listing_id) filter (where was_active_in_month))
     over (partition by listing_neighbourhood order by month_start)
     as prev_active_listings,
