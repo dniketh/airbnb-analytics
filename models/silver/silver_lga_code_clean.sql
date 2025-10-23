@@ -4,7 +4,7 @@ with src as (
   select
     lga_code,
     lga_name
-  from {{ source('bronze','lga_code') }}
+  from {{ ref('lga_code') }}
 ),
 --just for verification purposes - not really a need 
 clean as ( 

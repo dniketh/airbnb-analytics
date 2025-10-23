@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with src as (
-  select * from {{ source('bronze','census_g01') }}
+  select * from {{ ref('census_g01') }}
 ),
 clean as (
   select

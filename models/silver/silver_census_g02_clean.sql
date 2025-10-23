@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 with src as (
-  select * from {{ source('bronze','census_g02') }}
+  select * from {{ ref('census_g02') }}
 )
 select
   nullif(trim(lower(lga_code_2016)), '')             as lga_code,
