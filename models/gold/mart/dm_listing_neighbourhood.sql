@@ -1,6 +1,5 @@
 {{ config(materialized='view') }}
 
--- 1) Base facts
 with base as (
   select
     f.listing_id,
@@ -14,7 +13,6 @@ with base as (
     f.number_of_reviews
   from {{ ref('fact_listings') }} f
 ),
--- 2) Date attributes (for SCD2 joins + month grouping)
 with_date as (
   select
     b.*,
@@ -24,7 +22,6 @@ with_date as (
   left join {{ ref('dim_date') }} d
     on b.date_id = d.date_id
 ),
--- 3) Time-valid SCD2 join to HOST for every scrape row
 host_joined as (
   select
     wd.*,
@@ -35,7 +32,6 @@ host_joined as (
     and wd.scraped_date::timestamp >= h.record_start_date
     and wd.scraped_date::timestamp <  coalesce(h.record_end_date,'9999-12-31'::timestamp)
 ),
--- 4) Suburb name (listing_neighbourhood)
 with_suburb as (
   select
     s.suburb_name as listing_neighbourhood,
@@ -44,7 +40,6 @@ with_suburb as (
   left join {{ ref('dim_suburb') }} s
     on s.suburb_id = hj.suburb_id
 ),
--- 5) Per-row derivations (keep ALL scrapes within the month)
 derived as (
   select
     listing_neighbourhood,
