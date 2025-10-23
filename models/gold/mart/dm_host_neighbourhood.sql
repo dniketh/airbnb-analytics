@@ -107,7 +107,6 @@ per_listing_month as (
 select
   month_start,
   host_neighbourhood_lga,
-  host_neighbourhood_lga_code,
 
   count(distinct host_id) as distinct_hosts,
 

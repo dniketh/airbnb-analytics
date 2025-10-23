@@ -4,7 +4,7 @@
     target_schema = 'silver',
     unique_key    = 'host_id',
     strategy      = 'timestamp',
-    updated_at    = 'scraped_date'
+    updated_at    =  'scraped_date'
   )
 }}
 select
@@ -14,5 +14,5 @@ select
   host_neighbourhood,
   host_since,
   scraped_date
-from {{ ref('silver_host') }}
+from {{ ref('silver_host_for_snapshot') }}
 {% endsnapshot %}

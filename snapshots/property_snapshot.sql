@@ -9,10 +9,9 @@
 }}
 select
   listing_id,
-  host_id,
   property_type,
   room_type,
   accommodates,
   scraped_date
-from {{ ref('silver_listing') }}
+from {{ ref('silver_property_for_snapshot') }}
 {% endsnapshot %}

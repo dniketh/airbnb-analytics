@@ -1,4 +1,4 @@
-{{ config(materialized='view') }}
+{{ config(materialized='table') }}
 
 with s as (
   select
@@ -7,28 +7,33 @@ with s as (
     host_is_superhost,
     host_neighbourhood,
     host_since,
-    dbt_valid_from::timestamp as record_start_date,
-    dbt_valid_to::timestamp   as raw_record_end_date
+    dbt_valid_from::date as snapshot_date
   from {{ ref('host_snapshot') }}
 ),
-
-ordered as (
+month_windows as (
   select
-    s.*,
-    lead(record_start_date) over (
-      partition by host_id order by record_start_date
-    ) as next_start
+    host_id,
+    host_name,
+    host_is_superhost,
+    host_neighbourhood,
+    host_since,
+    date_trunc('month', snapshot_date)::timestamp                         as record_start_date,
+    (date_trunc('month', snapshot_date) + interval '1 month')::timestamp  as record_end_date
   from s
+),
+dedup_same_month as (
+  -- If (for any reason) multiple snapshot rows landed in the same month, (to simplify joins and we are only doing monthly data marts)
+  select distinct on (host_id, record_start_date)
+    host_id,
+    host_name,
+    host_is_superhost,
+    host_neighbourhood,
+    host_since,
+    record_start_date,
+    record_end_date
+  from month_windows
+  order by host_id, record_start_date
 )
-
-select
-  host_id,
-  host_name,
-  host_is_superhost,
-  host_neighbourhood,
-  host_since,
-  record_start_date,
-  coalesce(next_start, timestamp '9999-12-31 00:00:00') as record_end_date,
-  (next_start is null) as is_current
-from ordered
+select *
+from dedup_same_month
 order by host_id, record_start_date

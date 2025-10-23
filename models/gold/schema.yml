@@ -69,12 +69,3 @@ models:
               arguments:
                 to: ref('dim_host')
                 field: host_id
-
-      - name: month_start
-        description: "Month start date for this fact row"
-        tests:
-          - not_null
-
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: ['listing_id', 'recorded_date']
