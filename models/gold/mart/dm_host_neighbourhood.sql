@@ -97,7 +97,7 @@ per_listing_month as (
 select
   month_start,
   host_neighbourhood_lga,
-
+  host_neighbourhood_lga_code,
   count(distinct host_id) as distinct_hosts,
 
   -- summing the est revenue computed for each row group in previous cte ( for active listings only)
