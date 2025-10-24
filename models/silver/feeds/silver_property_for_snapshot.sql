@@ -1,5 +1,4 @@
 {{ config(materialized='view') }}
-{% set through = var('snapshot_through', none) %}
 
 with base as (
   select
@@ -13,9 +12,6 @@ with base as (
     date_trunc('month', scraped_date)::date                           as month_start
   from {{ ref('silver_listing') }}
   where listing_id is not null
-  {% if through is not none %}
-    and scraped_date <= {{ "'" ~ through ~ "'" }}::timestamp
-  {% endif %}
 ),
 ranked as (
   select

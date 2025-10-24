@@ -1,6 +1,5 @@
 {{ config(materialized='view') }}
 
--- 1) Base facts + resolve dates from dim_date
 with base as (
   select
     f.listing_id,
@@ -15,8 +14,6 @@ with base as (
   left join {{ ref('dim_date') }} d
     on d.date_id = f.date_id
 ),
-
--- 2) SCD2 listing attrs (DATE-based validity)
 property_scd as (
   select
     b.*,
@@ -29,9 +26,7 @@ property_scd as (
     and b.recorded_date >= dl.record_start_date
     and b.recorded_date <  coalesce(dl.record_end_date, '9999-12-31'::date)
 ),
-
--- 3) SCD2 host attrs (DATE-based validity)
-host_scd as (
+host_joined as (
   select
     l.*,
     coalesce(dh.host_is_superhost, false) as host_is_superhost
@@ -41,8 +36,6 @@ host_scd as (
     and l.recorded_date >= dh.record_start_date
     and l.recorded_date <  coalesce(dh.record_end_date, '9999-12-31'::date)
 ),
-
--- 4) Row-level derivations
 derived as (
   select
     month_start,
@@ -58,10 +51,8 @@ derived as (
     host_is_superhost,
     case when has_availability then greatest(0, 30 - availability_30) else 0 end                                       as stays_active,
     case when has_availability then (greatest(0, 30 - availability_30) * price) else 0 end::numeric(14,2)               as est_revenue_active
-  from host_scd
+  from host_joined
 ),
-
--- 5) Monthly aggregates (distinct listings)
 agg as (
   select
     month_start,
