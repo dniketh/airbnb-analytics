@@ -1,5 +1,5 @@
 {{ config(materialized='table') }}
-
+-- date of listing scraped
 with series as (
   select generate_series(
     date '2019-01-01',      

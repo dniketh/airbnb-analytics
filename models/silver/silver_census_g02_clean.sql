@@ -4,7 +4,7 @@ with src as (
   select * from {{ ref('census_g02') }}
 )
 select
-  nullif(trim(lower(lga_code_2016)), '')             as lga_code,
+  lpad(regexp_replace(lga_code_2016::text, '\D', '', 'g'), 5, '0') as lga_code,
 
   cast(median_age_persons as numeric(5,2))           as median_age_persons,
   cast(average_household_size as numeric(5,2))       as average_household_size,

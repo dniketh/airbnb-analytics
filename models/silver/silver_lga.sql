@@ -1,6 +1,5 @@
 {{ config(materialized='table') }}
 
--- Use the cleaned suburb ↔ LGA-name mapping from Silver
 with raw as (
   select
     lga_name    as lga_name_norm,   -- already lower/trimmed in silver_lga_suburb_clean
@@ -16,7 +15,7 @@ codes as (
   from {{ ref('silver_lga_code_clean') }}
 ),
 
--- Attach LGA code to each suburb via normalised LGA name
+-- Attach LGA code to each suburb via cleaned LGA name
 joined as (
   select
     r.suburb_name,
@@ -27,7 +26,7 @@ joined as (
     on c.lga_name_norm = r.lga_name_norm
 )
 
--- One row per suburb with its LGA code + normalised LGA name
+-- One row per suburb with its LGA code and the cleaned LGA name
 select distinct
   suburb_name,
   lga_code,

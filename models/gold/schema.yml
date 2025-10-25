@@ -47,8 +47,7 @@ models:
         tests: [not_null, unique]
       - name: suburb_name
         tests: [not_null]
-
- 
+         
   - name: fact_listings
     description: "Monthly listing fact table"
     columns:

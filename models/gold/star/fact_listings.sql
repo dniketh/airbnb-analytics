@@ -1,6 +1,5 @@
 {{ config(materialized='table') }}
 
--- 1) Source: the latest-per-listing-per-month silver table
 with src as (
   select
     listing_id::bigint                 as listing_id,
@@ -15,8 +14,6 @@ with src as (
   from {{ ref('silver_listing_for_fact') }}   -- <- use your silver model name here
   where listing_id is not null
 ),
-
--- 2) Resolve the surrogate date key
 with_date as (
   select
     s.*,
@@ -25,8 +22,6 @@ with_date as (
   left join {{ ref('dim_date') }} d
     on d.scraped_date = s.scraped_date
 ),
-
--- 3) Resolve the suburb dimension key (normalized to lowercase/trimmed)
 with_suburb as (
   select
     wd.*,
@@ -35,13 +30,11 @@ with_suburb as (
   left join {{ ref('dim_suburb') }} ds
     on ds.suburb_name = wd.listing_neighbourhood
 )
-
--- 4) Final fact (no raw dates; use date_id to reach month_start/scraped_date via dim_date)
 select
   listing_id,
   host_id,
   suburb_id,
-  date_id,                 -- join to dim_date for scraped_date / month_start
+  date_id,                 
   price,
   has_availability,
   availability_30,

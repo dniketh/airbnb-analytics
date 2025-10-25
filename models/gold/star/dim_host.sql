@@ -17,7 +17,7 @@ month_windows as (
     host_is_superhost,
     host_neighbourhood,
     host_since,
-    date_trunc('month', snapshot_date)::timestamp                         as record_start_date,
+    date_trunc('month', snapshot_date)::timestamp                         as record_start_date, -- this is done to expand the window till 1st of next month, since only one host version (latest) is taken from each load
     (date_trunc('month', snapshot_date) + interval '1 month')::timestamp  as record_end_date
   from s
 ),

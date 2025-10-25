@@ -1,5 +1,5 @@
 {{ config(materialized='view') }}
-
+-- a feeder for the snapshot 
 with base as (
   select
     host_id,

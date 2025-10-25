@@ -1,5 +1,5 @@
 {{ config(materialized='table') }}
-
+-- listing neighbourhood as a dimension
 with src as (
   select distinct lower(trim(listing_neighbourhood))::text as suburb_name
   from {{ ref('silver_listing') }}

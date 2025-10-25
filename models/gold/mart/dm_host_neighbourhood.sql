@@ -42,17 +42,12 @@ overrides as (
 mapped_lga as (
   select
     hj.*,
-    -- suburb route
     r_sub.lga_code as code_by_suburb,
     r_sub.lga_name as name_by_suburb,
-    -- fallback by LGA name
     r_name.lga_code as code_by_name,
     r_name.lga_name as name_by_name,
-    -- override labels (Unknown/Overseas)
     o.lga_code      as code_by_override,
     o.lga_name      as name_by_override,
-
-    -- final main LGA name used from suburb join or lga join 
     coalesce(r_sub.lga_code, r_name.lga_code, o.lga_code)::text as host_neighbourhood_lga_code,
     coalesce(r_sub.lga_name, r_name.lga_name, o.lga_name)       as host_neighbourhood_lga
   from host_joined hj
@@ -64,7 +59,6 @@ mapped_lga as (
   left join overrides o
     on hj.host_neigh_norm = o.key_norm
 ),
--- 6) Per-row derivations (no filtering; Unknown/Overseas included)
 derived as (
   select
     host_neighbourhood_lga,
@@ -80,8 +74,6 @@ derived as (
          else 0 end::numeric(14,2)           as est_revenue_active
   from mapped_lga
 ),
-
--- 7) One row for eah (listing, month, host,  host neighbourhood-lga ) group
 per_listing_month as (
   select
     host_neighbourhood_lga,
@@ -100,12 +92,10 @@ select
   host_neighbourhood_lga_code,
   count(distinct host_id) as distinct_hosts,
 
-  -- summing the est revenue computed for each row group in previous cte ( for active listings only)
   round((
     (sum(est_revenue_active_sum) / nullif(count(distinct listing_id) filter (where was_active_in_month), 0))::numeric
   ), 2)::numeric(14,2)  as est_revenue_per_active_listing,
 
-  -- per host
   round((
     (sum(est_revenue_active_sum) / nullif(count(distinct host_id), 0))::numeric
   ), 2)::numeric(14,2)  as est_revenue_per_host

@@ -5,7 +5,7 @@ with src as (
 ),
 clean as (
   select
-    nullif(trim(lower(src.lga_code_2016)), '')                         as lga_code,
+    lpad(regexp_replace(lga_code_2016::text, '\D', '', 'g'), 5, '0') as lga_code,
 
     cast(tot_p_p as bigint)                                        as population_total,
     cast(tot_p_m as bigint)                                        as population_male,

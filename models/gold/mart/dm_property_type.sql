@@ -80,37 +80,23 @@ agg as (
   from derived
   group by 1,2,3,4
 )
-
--- 6) Final select + MoM helpers
 select
   month_start,
   property_type,
   room_type,
   accommodates,
 
-  listings_total,
-  listings_active,
-  listings_inactive,
-
-  -- Active listings rate (%)
   round( (100.0 * listings_active / nullif(listings_total, 0))::numeric, 2)         as active_listings_rate_pct,
 
   distinct_hosts,
   round( (100.0 * superhost_hosts / nullif(distinct_hosts, 0))::numeric, 2)        as superhost_rate_pct,
-
+  total_stays_active,
   min_price_active,
   max_price_active,
   avg_price_active,
   median_price_active,
   avg_review_score_active,
-
-  total_stays_active,
   avg_est_revenue_per_active_listing,
-
-  -- MoM helpers
-  lag(listings_active)   over (partition by property_type, room_type, accommodates order by month_start) as prev_active_listings,
-  lag(listings_inactive) over (partition by property_type, room_type, accommodates order by month_start) as prev_inactive_listings,
-
   -- % change MoM (active)
   round((
     100.0 * (

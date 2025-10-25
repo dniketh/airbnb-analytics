@@ -2,7 +2,6 @@
 
 with src as (
   select
-    -- raw fields
     listing_id, host_id, scrape_id, scraped_date, host_name, host_is_superhost,
     host_neighbourhood, host_since, listing_neighbourhood, property_type,
     room_type, accommodates, price, has_availability, availability_30,
@@ -16,13 +15,11 @@ with src as (
 
 clean as (
   select
-    -- ids & dates
     nullif(trim(listing_id), '')::bigint           as listing_id,
     nullif(trim(host_id), '')::bigint              as host_id,
     nullif(trim(scrape_id), '')::bigint           as scrape_id,
     cast(scraped_date as date)                     as scraped_date,
 
-    -- host attrs
     nullif(trim(host_name), '')                    as host_name,
     case lower(host_is_superhost)
       when 't' then true when 'f' then false else null end
@@ -30,13 +27,10 @@ clean as (
     coalesce(nullif(trim(lower(host_neighbourhood)), ''), 'unknown') as host_neighbourhood,
     nullif(trim(host_since), '')                   as host_since,
 
-    -- listing attrs
     coalesce(nullif(trim(lower(listing_neighbourhood)), ''), 'unknown') as listing_neighbourhood,
     coalesce(nullif(trim(lower(property_type)), ''), 'unknown')         as property_type,
     coalesce(nullif(trim(lower(room_type)), ''), 'unknown')             as room_type,
     nullif(trim(accommodates), '')::int           as accommodates,
-
-    -- metrics
     nullif(trim(price), '')::numeric(12,2)        as price,
     case lower(has_availability)
       when 't' then true when 'f' then false else null end
@@ -50,11 +44,9 @@ clean as (
     nullif(trim(review_scores_communication), '')::numeric(5,2) as review_scores_communication,
     nullif(trim(review_scores_value), '')::numeric(5,2)         as review_scores_value,
 
-    -- provenance
     source_file,
     source_month
   from src
-  -- require at least one id to be present (and not just empty text)
   where nullif(trim(listing_id), '') is not null
      or nullif(trim(host_id), '')    is not null
 )

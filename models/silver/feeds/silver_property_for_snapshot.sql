@@ -1,5 +1,5 @@
 {{ config(materialized='view') }}
-
+-- feeder for propery snapshot
 with base as (
   select
     listing_id,
@@ -12,7 +12,7 @@ with base as (
     date_trunc('month', scraped_date)::date                           as month_start
   from {{ ref('silver_listing') }}
   where listing_id is not null
-),
+),--making sure latest record in that month is given to snapshot
 ranked as (
   select
     *,

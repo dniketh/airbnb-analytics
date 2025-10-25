@@ -9,7 +9,7 @@ with s as (
     dbt_valid_from::date as snap_date   -- from snapshot scraped_date (date)
   from {{ ref('property_snapshot') }}
 ),
-anchored as (
+prop_scd as (
   select
     listing_id,
     property_type,
@@ -19,7 +19,7 @@ anchored as (
     (date_trunc('month', snap_date) + interval '1 month')::timestamp as record_end_date
   from s
 ),
--- Ensure only one row per (listing_id, record_start_date)
+-- Ensure only one row per (listing_id, record_start_date) i.e only record (latest if there is multiple) of property details in each load
 dedup as (
   select distinct on (listing_id, record_start_date)
     listing_id,
@@ -28,7 +28,7 @@ dedup as (
     accommodates,
     record_start_date,
     record_end_date
-  from anchored
+  from prop_scd
   order by listing_id, record_start_date, property_type, room_type
 )
 select *
