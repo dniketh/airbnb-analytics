@@ -3,7 +3,7 @@
 with series as (
   select generate_series(
     date '2019-01-01',      
-    date '2030-12-31',      -- for a future buffer
+    date '2030-12-31',      -- for a future date ( a window)
     interval '1 day'
   )::date as scraped_date
 )

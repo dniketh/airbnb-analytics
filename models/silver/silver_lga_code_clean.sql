@@ -15,7 +15,6 @@ clean as (
   where nullif(trim(lga_code), '') is not null
     and nullif(trim(lga_name), '') is not null
 )
-
 select distinct
   lga_code,
   lga_name

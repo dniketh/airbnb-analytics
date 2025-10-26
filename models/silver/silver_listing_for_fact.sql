@@ -29,16 +29,16 @@ with src as (
   from {{ ref('silver_airbnb_clean') }}
   where listing_id is not null
 ),
-scoped as (
+date_match as (
   select *
   from src
-  where date_trunc('month', scraped_date)::date = source_month -- to remove rows that has scraped_date not matching with the loaded month
+  where date_trunc('month', scraped_date)::date = source_month -- to ensure rows that has scraped_date not matching with the loaded month are dropped (this is actually done in in silver_airbclean)
 ),
-stamped as (
+get_month_start as (
   select
-    s.*,
+    d.*,
     date_trunc('month', s.scraped_date)::date as month_start
-  from scoped s
+  from date_match d
 ),
 --    latest record is taken using scraped_date 
 latest_per_month as (
@@ -50,7 +50,7 @@ latest_per_month as (
         partition by st.listing_id, st.month_start
         order by st.scraped_date desc
       ) as rn
-    from stamped st
+    from get_month_start st
   ) x
   where rn = 1
 )

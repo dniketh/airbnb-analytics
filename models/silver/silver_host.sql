@@ -11,7 +11,6 @@ with src as (
   from {{ ref('silver_airbnb_clean') }}
   where host_id is not null
 ),
-
 dedup as ( --for making sure to have  no duplicates on the same scraped_date
   select
     host_id,
@@ -23,7 +22,6 @@ dedup as ( --for making sure to have  no duplicates on the same scraped_date
   from src
   group by host_id, scraped_date
 )
-
 select *
 from dedup
 order by host_id, scraped_date
