@@ -22,6 +22,6 @@ select
   review_scores_communication::numeric(5,2) as review_scores_communication,
   review_scores_value::numeric(5,2)         as review_scores_value,
   scraped_date::timestamp                        as scraped_date,      -- original date 
-  date_trunc('month', scraped_date)::date   as month              -- convenience for rollups
+  date_trunc('month', scraped_date)::date   as month             
 from src
 where listing_id is not null

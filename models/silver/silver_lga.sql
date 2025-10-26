@@ -6,7 +6,6 @@ with raw as (
     suburb_name                      -- already lower/trimmed
   from {{ ref('silver_lga_suburb_clean') }}
 ),
-
 -- Cleaned LGA code lookup (name -> code)
 codes as (
   select
@@ -14,7 +13,6 @@ codes as (
     lower(lga_name) as lga_name_norm
   from {{ ref('silver_lga_code_clean') }}
 ),
-
 -- Attach LGA code to each suburb via cleaned LGA name
 joined as (
   select
@@ -25,7 +23,6 @@ joined as (
   left join codes c
     on c.lga_name_norm = r.lga_name_norm
 )
-
 -- One row per suburb with its LGA code and the cleaned LGA name
 select distinct
   suburb_name,
