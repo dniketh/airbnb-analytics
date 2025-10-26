@@ -37,7 +37,7 @@ date_match as (
 get_month_start as (
   select
     d.*,
-    date_trunc('month', s.scraped_date)::date as month_start
+    date_trunc('month', d.scraped_date)::date as month_start
   from date_match d
 ),
 --    latest record is taken using scraped_date 
