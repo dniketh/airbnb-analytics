@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: airbnb_raw
+      - name: lga_code
+      - name: lga_suburb
+      - name: census_g01
+      - name: census_g02
